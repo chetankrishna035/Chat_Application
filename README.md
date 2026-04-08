@@ -1,16 +1,9 @@
 # ⚡ Smart Chat: Advanced Real-Time Messaging Platform
 
-A production-grade, real-time chat application featuring AI-powered smart replies, high-quality WebRTC calling, and a premium "WhatsApp-style" user experience.
+A production-grade, real-time chat application featuring AI-powered smart replies and a premium "WhatsApp-style" user experience.
 
 
 ## 🚀 Key Features
-
-###  Advanced Communication Suite
-- **Voice & Video Calling**: Seamless WebRTC-powered calls using SimplePeer.
-- **Ringing Experience**: Professional outgoing ringtones and pulsing "WhatsApp-style" ringing UI.
-- **In-Call Controls**: Real-time Mute Mic, Toggle Video, and Camera Flip toggles.
-- **Live Call Timer**: Accurate duration tracking for every conversation.
-- **Smart Call Logs**: Detailed message history for "Missed," "Declined," or "Connected" calls with exact durations.
 
 ###  AI-Powered "Smart Replies"
 - **Contextual Suggestions**: Over **100+ randomized variations** across 17 distinct chat intents (Greetings, Logistics, Emotions, Professional, etc.).
@@ -34,7 +27,6 @@ A production-grade, real-time chat application featuring AI-powered smart replie
 - **Frontend**: HTML5, Vanilla CSS, JavaScript (ES6+), Bootstrap 5.
 - **Backend**: Node.js, Express.js.
 - **Real-Time**: Socket.io.
-- **Video/Audio**: WebRTC (SimplePeer).
 - **Database**: MongoDB (Mongoose).
 - **Imaging**: Cropper.js.
 
