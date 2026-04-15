@@ -350,8 +350,9 @@ function renderChats(chats) {
             sendBtn.disabled = false;
             voiceRecBtn.disabled = false;
 
-            // Video/Voice call & Unfriend logic
+            // Video/Voice call, Unfriend & Clear Chat logic
             const unfriendBtn = document.getElementById('unfriend-btn');
+            const clearChatBtn = document.getElementById('clear-chat-btn');
             if (isGroup) {
                 videoCallBtn.classList.remove('d-none');
                 voiceCallBtn.classList.add('d-none'); // Group voice uses conference
@@ -363,6 +364,11 @@ function renderChats(chats) {
                     unfriendBtn.classList.remove('d-none');
                     unfriendBtn.onclick = () => confirmUnfriend(otherUser._id, otherUser.username);
                 }
+            }
+            // Show clear chat for all chat types
+            if (clearChatBtn) {
+                clearChatBtn.classList.remove('d-none');
+                clearChatBtn.onclick = () => clearCurrentChat();
             }
 
             socket.emit('join chat', chat._id);
@@ -866,14 +872,19 @@ function connectSocket() {
     });
 
     socket.on('message status update', ({ messageId, chatId, status }) => {
+        console.log('📬 Status update:', { messageId, chatId, status });
         if (messageId) {
-            // Update specific message
+            // Update specific message tick
             const statusSpan = document.querySelector(`.msg-status[data-id="${messageId}"]`);
             if (statusSpan) statusSpan.innerHTML = getTickHtml(status, true);
-        } else if (chatId && status === 'seen') {
-            // Bulk update all ticks to seen for this chat
-            const spans = document.querySelectorAll('.msg-status');
-            spans.forEach(span => span.innerHTML = getTickHtml('seen', true));
+        }
+        if (chatId && status === 'seen') {
+            // If we are currently viewing this chat, bulk-update ALL our sent message ticks to seen
+            const currentChatId = currentChat?._id;
+            if (currentChatId && (currentChatId === chatId || currentChatId === chatId.toString())) {
+                const spans = document.querySelectorAll('.message-sent .msg-status');
+                spans.forEach(span => span.innerHTML = getTickHtml('seen', true));
+            }
         }
     });
 
@@ -890,6 +901,7 @@ function connectSocket() {
     // --- Mesh Signaling Listeners ---
     socket.on("user-joined-call", ({ socketId, userId }) => {
         // Stop outgoing ringtone once a peer joins
+        outgoingRingtone.muted = true;
         outgoingRingtone.pause();
         outgoingRingtone.currentTime = 0;
 
@@ -903,8 +915,10 @@ function connectSocket() {
 
     socket.on("signal-peer-received", ({ signal, fromSocketId, fromUserId }) => {
         // Stop all ringtones as we are receiving signaling
+        outgoingRingtone.muted = true;
         outgoingRingtone.pause();
         outgoingRingtone.currentTime = 0;
+        callRingtone.muted = true;
         callRingtone.pause();
         callRingtone.currentTime = 0;
 
@@ -961,11 +975,13 @@ function connectSocket() {
         incomingCallModal.querySelector('.text-muted').innerText = typeText;
 
         incomingCallModal.classList.remove('d-none');
+        callRingtone.muted = false;
         callRingtone.play().catch(e => console.log("Audio block: ", e));
     });
 
     socket.on('callAccepted', (signal) => {
         //MESH HANDLE: Simply clear the ringing UI and let the grid fill
+        outgoingRingtone.muted = true;
         outgoingRingtone.pause();
         outgoingRingtone.currentTime = 0;
         if (ringingUI) ringingUI.classList.add('d-none');
@@ -1042,6 +1058,7 @@ async function handleStartCall(type) {
         addLocalStream();
 
         if (!isGroup) {
+            outgoingRingtone.muted = false;
             outgoingRingtone.play().catch(e => console.log("Audio block: ", e));
             // Send Invitation
             socket.emit('callUser', {
@@ -1067,6 +1084,7 @@ videoCallBtn.addEventListener('click', () => handleStartCall('video'));
 voiceCallBtn.addEventListener('click', () => handleStartCall('voice'));
 
 acceptCallBtn.addEventListener('click', async () => {
+    callRingtone.muted = true;
     callRingtone.pause();
     callRingtone.currentTime = 0;
     incomingCallModal.classList.add('d-none');
@@ -1142,15 +1160,15 @@ function endCall(reason = 'Ended') {
     incomingCallModal.classList.add('d-none');
     videoGrid.innerHTML = ''; // Wipe the grid
 
-    // Audio Cleanup
+    // Audio Cleanup — stop ALL sounds immediately
+    callRingtone.muted = true;
     callRingtone.pause();
     callRingtone.currentTime = 0;
+    outgoingRingtone.muted = true;
     outgoingRingtone.pause();
     outgoingRingtone.currentTime = 0;
-
-    if (reason !== 'I rejected' && reason !== 'Remote ended') {
-        callEndSound.play().catch(e => null);
-    }
+    callEndSound.pause();
+    callEndSound.currentTime = 0;
 
     // Log the call if initiator
     if (isCallInitiator && activeCallUserId && currentChat) {
@@ -2257,6 +2275,37 @@ async function confirmUnfriend(friendId, friendName) {
     } catch (err) {
         console.error(err);
         alert('Server error while unfriending.');
+    }
+}
+
+// ── Clear Chat ─────────────────────────────────────────────────
+async function clearCurrentChat() {
+    if (!currentChat) return;
+    if (!confirm('Are you sure you want to clear all messages in this chat? This cannot be undone.')) return;
+
+    try {
+        const res = await fetch(`${API_URL}/chat/clear/${currentChat._id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${currentUser.token}` }
+        });
+
+        if (res.ok) {
+            // Clear the messages UI
+            chatMessages.innerHTML = `
+                <div class="text-center text-muted mt-5">
+                    <i class="fa-regular fa-comment-dots fa-3x mb-3 opacity-50"></i>
+                    <p>No messages yet. Start the conversation!</p>
+                </div>
+            `;
+            // Refresh sidebar to update latest message preview
+            fetchChats();
+        } else {
+            const data = await res.json();
+            alert(data.message || 'Failed to clear chat');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Server error while clearing chat.');
     }
 }
 

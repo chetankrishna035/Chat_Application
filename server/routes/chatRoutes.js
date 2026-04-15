@@ -10,7 +10,8 @@ const {
     addToGroup,
     removeFromGroup,
     deleteMessage,
-    editMessage
+    editMessage,
+    clearChat
 } = require('../controllers/chatController');
 const { protect } = require('../middleware/auth');
 
@@ -31,6 +32,9 @@ router.put('/groupremove', protect, removeFromGroup);
 // Message Management
 router.delete('/message/:messageId', protect, deleteMessage);
 router.put('/message/:messageId', protect, editMessage);
+
+// Clear Chat
+router.delete('/clear/:chatId', protect, clearChat);
 
 // This parameterized route must be last to avoid shadowing other routes!
 router.get('/:chatId', protect, allMessages);

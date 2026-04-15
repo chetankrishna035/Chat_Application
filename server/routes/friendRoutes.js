@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const FriendRequest = require('../models/FriendRequest');
 const User = require('../models/User');
+const Chat = require('../models/Chat');
 const { protect } = require('../middleware/auth');
 
 // Helper: get all accepted friend IDs for a user
@@ -88,6 +89,22 @@ router.put('/accept/:id', protect, async (req, res) => {
 
         request.status = 'accepted';
         await request.save();
+
+        // Automatically create a Chat document if one does not exist yet
+        let isChat = await Chat.find({
+            isGroupChat: false,
+            $and: [
+                { users: { $elemMatch: { $eq: req.user._id } } },
+                { users: { $elemMatch: { $eq: request.sender } } }
+            ]
+        });
+        if (isChat.length === 0) {
+            await Chat.create({
+                chatName: "sender",
+                isGroupChat: false,
+                users: [req.user._id, request.sender],
+            });
+        }
 
         const populated = await FriendRequest.findById(request._id)
             .populate('sender', 'username profilePic')

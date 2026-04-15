@@ -156,6 +156,7 @@ const initSocket = (server) => {
         socket.on("mark chat seen", async ({ chatId, userId }) => {
             try {
                 if (!chatId || !userId) return;
+                console.log(`[SEEN] User ${userId} marking chat ${chatId} as seen`);
 
                 const unseenMsgs = await Message.find({
                     chatId,
@@ -163,6 +164,7 @@ const initSocket = (server) => {
                     status: { $ne: 'seen' }
                 });
 
+                console.log(`[SEEN] Found ${unseenMsgs.length} unseen messages`);
                 if (unseenMsgs.length === 0) return;
 
                 const unseenIds = unseenMsgs.map(m => m._id);
@@ -171,9 +173,10 @@ const initSocket = (server) => {
                 // Notify each unique sender
                 const senderIds = [...new Set(unseenMsgs.map(m => m.sender.toString()))];
                 for (const sid of senderIds) {
+                    console.log(`[SEEN] Notifying sender ${sid}, online: ${onlineUsers.has(sid)}`);
                     if (onlineUsers.has(sid)) {
                         io.to(onlineUsers.get(sid)).emit("message status update", {
-                            chatId,
+                            chatId: chatId.toString(),
                             status: "seen"
                         });
                     }

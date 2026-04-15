@@ -343,3 +343,27 @@ exports.getUserAnalytics = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+// Clear Chat — delete all messages in a chat
+exports.clearChat = async (req, res) => {
+    try {
+        const chatId = req.params.chatId;
+        console.log('Clear chat request for:', chatId, 'by user:', req.user._id);
+
+        // Verify the user is part of this chat
+        const chat = await Chat.findOne({ _id: chatId, users: req.user._id });
+        if (!chat) return res.status(404).json({ message: "Chat not found" });
+
+        // Delete all messages in this chat
+        const deleteResult = await Message.deleteMany({ chatId: chatId });
+        console.log('Deleted messages:', deleteResult.deletedCount);
+
+        // Clear latestMessage reference using $unset
+        await Chat.findByIdAndUpdate(chatId, { $unset: { latestMessage: 1 } });
+
+        res.json({ message: "Chat cleared successfully" });
+    } catch (error) {
+        console.error('Clear chat error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
