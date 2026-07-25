@@ -1,13 +1,7 @@
 # ⚡ Smart Chat: Advanced Real-Time Messaging Platform
 
-A production-grade, real-time chat application featuring AI-powered smart replies and a premium "WhatsApp-style" user experience.
+A production-grade, real-time chat application and a premium "WhatsApp-style" user experience.
 
-
-## 🚀 Key Features
-
-###  AI-Powered "Smart Replies"
-- **Contextual Suggestions**: Over **100+ randomized variations** across 17 distinct chat intents (Greetings, Logistics, Emotions, Professional, etc.).
-- **Response Ranking**: Automatically detects questions vs. statements to provide the most relevant quick-tap chips.
 
 ###  Premium Media & Profile Tools
 - **WhatsApp-Style Cropper**: Integrated `Cropper.js` for perfect profile picture positioning.
